@@ -14,7 +14,7 @@ load_dotenv()
 # Load environment variables
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 LOCAL_HOST = os.environ.get("LOCAL_HOST")
-API_URL = f"{LOCAL_HOST}api/telebot/task/"
+API_URL = os.environ.get("API_URL")
 
 
 # Command: /list
