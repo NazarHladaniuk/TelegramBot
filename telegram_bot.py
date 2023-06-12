@@ -14,12 +14,14 @@ load_dotenv()
 # Load environment variables
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 LOCAL_HOST = os.environ.get("LOCAL_HOST")
-API_URL = f"{LOCAL_HOST}api/telebot/task/"
+API_URL = os.environ.get("API_URL")
 
 
-# Command: /list
 async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Extract the page number from command arguments, default to 1 if not provided
+    """
+    Command handler for the /list command.
+    Retrieves tasks from the API and sends the task list as a response message.
+    """
     page = 1
     if context.args:
         try:
@@ -28,13 +30,11 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("Invalid page number.")
             return
 
-    # Make API request to retrieve tasks for the specified page
     response = requests.get(f"{API_URL}?page={page}")
 
     if response.status_code == 200:
         tasks = response.json()
         if tasks.get("results"):
-            # Format the task list as a string
             task_list = "\n".join(
                 [
                     f"#{task['id']}: {task['title']} - before {task['due_date']} (completed: {task['completed']})"
@@ -43,7 +43,6 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             message = f"Task List (Page {page}):\n{task_list}"
 
-            # Add pagination information if more tasks are available
             if tasks.get("next"):
                 message += f"\n\nTo view more tasks, use /list {page + 1}"
         else:
@@ -51,12 +50,14 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         message = "Failed to retrieve tasks."
 
-    # Send the response message to the user
     await update.message.reply_text(message)
 
 
-# Command: /view
 async def view_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Command handler for the /view command.
+    Retrieves a specific task from the API and sends the task details as a response message.
+    """
     args = context.args
     if len(args) != 1:
         await update.message.reply_text(
@@ -66,12 +67,11 @@ async def view_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     task_id = args[0]
 
-    # Make API request to retrieve the task details
     response = requests.get(f"{API_URL}{task_id}/")
 
     if response.status_code == 200:
         task = response.json()
-        # Format the task details as a message
+
         message = (
             f"Task #{task['id']}:\n"
             f"Title: {task['title']}\n"
@@ -84,12 +84,14 @@ async def view_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         message = "Failed to retrieve the task."
 
-    # Send the response message to the user
     await update.message.reply_text(message)
 
 
-# Command: /create
 async def create_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Command handler for the /create command.
+    Creates a new task using the provided arguments and sends the task details as a response message.
+    """
     args = " ".join(context.args).split("/")
     if len(args) != 3:
         await update.message.reply_text(
@@ -113,12 +115,11 @@ async def create_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "completed": False,
     }
 
-    # Make API request to create a new task
     response = requests.post(API_URL, json=payload)
 
     if response.status_code == 201:
         task = response.json()
-        # Format the created task details as a message
+
         message = (
             f"New task created:\n"
             f"Task #{task['id']}:\n"
@@ -130,12 +131,14 @@ async def create_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         message = "Failed to create the task."
 
-    # Send the response message to the user
     await update.message.reply_text(message)
 
 
-# Command: /delete
 async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Command handler for the /delete command.
+    Deletes a specific task from the API and sends a response message indicating the deletion status.
+    """
     args = context.args
     if len(args) != 1:
         await update.message.reply_text(
@@ -145,7 +148,6 @@ async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     task_id = args[0]
 
-    # Make API request to delete the specified task
     response = requests.delete(f"{API_URL}{task_id}/")
 
     if response.status_code == 204:
@@ -155,12 +157,14 @@ async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         message = "Failed to delete the task."
 
-    # Send the response message to the user
     await update.message.reply_text(message)
 
 
-# Command: /complete
 async def complete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Command handler for the /complete command.
+    Marks a specific task as completed in the API and sends the updated task details as a response message.
+    """
     args = context.args
     if len(args) != 1:
         await update.message.reply_text(
@@ -170,12 +174,11 @@ async def complete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     task_id = args[0]
 
-    # Make API request to mark the specified task as completed
     response = requests.patch(f"{API_URL}{task_id}/", json={"completed": True})
 
     if response.status_code == 200:
         task = response.json()
-        # Format the updated task details as a message
+
         message = (
             f"Task #{task['id']} marked as completed:\n"
             f"Title: {task['title']}\n"
@@ -188,12 +191,14 @@ async def complete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         message = "Failed to mark the task as completed."
 
-    # Send the response message to the user
     await update.message.reply_text(message)
 
 
-# Command: /update
 async def update_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Command handler for the /update command.
+    Updates the title of a specific task in the API and sends the updated task details as a response message.
+    """
     args = " ".join(context.args).split("/")
     if len(args) != 2:
         await update.message.reply_text(
@@ -205,12 +210,11 @@ async def update_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     payload = {"title": new_title.strip()}
 
-    # Make API request to update the title of the specified task
     response = requests.patch(f"{API_URL}{task_id}/", json=payload)
 
     if response.status_code == 200:
         task = response.json()
-        # Format the updated task details as a message
+
         message = (
             f"Task #{task['id']} updated successfully:\n"
             f"New Title: {task['title']}\n"
@@ -223,7 +227,6 @@ async def update_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         message = "Failed to update the task."
 
-    # Send the response message to the user
     await update.message.reply_text(message)
 
 
